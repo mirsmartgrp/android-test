@@ -25,7 +25,6 @@ local.properties
 .idea/modules.xml
 .idea/scopes/scope_settings.xml
 .idea/vcs.xml
-*.iml
  
 # OS-specific files
 .DS_Store
@@ -35,13 +34,3 @@ local.properties
 .Trashes
 ehthumbs.db
 Thumbs.db
-
-NenadJ commented 6 days ago
-
-Thank you !
-
-    Write
-    Preview
-
-Parsed as Markdown Edit in fullscreen
-
