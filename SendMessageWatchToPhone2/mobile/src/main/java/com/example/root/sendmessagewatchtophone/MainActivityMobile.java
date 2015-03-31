@@ -2,6 +2,8 @@ package com.example.root.sendmessagewatchtophone;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.os.Environment;
+import android.util.Log;
 import android.view.WindowManager;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
@@ -11,9 +13,14 @@ import com.google.android.gms.wearable.MessageApi;
 import com.google.android.gms.wearable.MessageEvent;
 import com.google.android.gms.wearable.Wearable;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.util.Date;
+
 
 public class MainActivityMobile extends Activity implements MessageApi.MessageListener, GoogleApiClient.ConnectionCallbacks {
     private static final String WEAR_MESSAGE_PATH = "/message";
+    private static final String TAG = "sensorValues";
     private GoogleApiClient mApiClient;
     private ArrayAdapter<String> mAdapter;
     private ListView mListView;
@@ -57,10 +64,32 @@ public class MainActivityMobile extends Activity implements MessageApi.MessageLi
                 if( messageEvent.getPath().equalsIgnoreCase( WEAR_MESSAGE_PATH ) ) {
                     mAdapter.add(new String(messageEvent.getData()));
                     mAdapter.notifyDataSetChanged();
+                    saveData(messageEvent);
                 }
             }
         });
     }
+
+    private void saveData(MessageEvent messageEvent) {
+        File prepath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+        String str = new String(messageEvent.getData());
+        String filename = "/"+new Date().getTime()+"_excercises.json";
+        String path = prepath + filename;
+
+        try {
+            File f = new File(prepath, filename);
+           FileWriter writer =new FileWriter(f);
+            writer.append(str);
+            writer.flush();
+            writer.close();
+            Log.i(TAG, "saved to " + path);
+        } catch (Exception e) {
+            e.printStackTrace();
+            Log.i(TAG, "not saved " + e);
+
+        }
+    }
+
     @Override
     public void onConnected(Bundle bundle) {
         Wearable.MessageApi.addListener( mApiClient, this );
@@ -83,5 +112,6 @@ public class MainActivityMobile extends Activity implements MessageApi.MessageLi
     }
     @Override
     public void onConnectionSuspended(int i) {
+        Log.i(TAG,"connection suspended mobile");
     }
 }

@@ -7,7 +7,6 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
-import android.os.Environment;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -23,19 +22,20 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.File;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class MainActivityWear extends Activity implements GoogleApiClient.ConnectionCallbacks, SensorEventListener {
 
-    private TextView mTextView;
     private static final String START_ACTIVITY = "/start_activity";
     private static final String WEAR_MESSAGE_PATH = "/message";
+    private static String ACCEL = "accelerometer";
+    private static String GYRO = "gyroscope";
+    private static String UNKNOWN = "unknwown";
+    private static String PEDO = "pedometer";
+    private static String TAG="sensorValues";
+    private TextView mTextView;
     private GoogleApiClient mApiClient;
     private JSONObject json;
     private JSONArray jsonAccel;
@@ -45,18 +45,22 @@ public class MainActivityWear extends Activity implements GoogleApiClient.Connec
     private List<Sensor> listOfSensors = new ArrayList<>();
     private Button btnStart;
     private Button btnStop;
-    private Map<String,JSONArray> sensorValues=new HashMap<>();
+    private TextView resultText;
+    private TextView AccelText;
+    private TextView StepText;
+    private TextView GyroText;
     private long startingTime;
-    private static String ACCEL = "accelerometer";
-    private static String GYRO = "gyroscope";
-    private static String UNKNOWN = "unknwown";
-    private static String PEDO = "pedometer";
-    private static String TAG="sensorValues";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main_activity_wear);
-        init();
+        AccelText =(TextView) findViewById(R.id.AccelText);
+        StepText =(TextView) findViewById(R.id.StepText);
+        resultText=(TextView) findViewById(R.id.resultText);
+        GyroText =(TextView) findViewById(R.id.GyroText);
+
+        initButtons();
         initGoogleApiClient();
         initSensors();
     }
@@ -102,16 +106,17 @@ public class MainActivityWear extends Activity implements GoogleApiClient.Connec
         super.onDestroy();
         mApiClient.disconnect();
     }
-    private void init() {
+    private void initButtons() {
         btnStart = (Button) findViewById(R.id.btnStart);
         btnStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 registerSensors();
-                registerJsons();
+                createJsons();
                 startingTime = new Date().getTime();
 
                 mApiClient.connect();
+                resultText.setText("running");
                 Log.i(TAG, "started");
             }
         });
@@ -131,45 +136,54 @@ public class MainActivityWear extends Activity implements GoogleApiClient.Connec
                     Log.i(TAG,"could not create json");
                 }
                 sendMessage(WEAR_MESSAGE_PATH, json.toString());
-                saveAsJson();
+
+
                 long runtime = new Date().getTime() - startingTime;
+                resultText.setText("stopped. runtime: "+Long.toString(runtime/100));
                 Log.i(TAG, "runtime (ms) " + runtime);
+                displaySensorDetails();
+
 
 
             }
         });
     }
 
-    private void saveAsJson() {
+    /**
+     * Log details of the sensor to console
+     */
+    private void displaySensorDetails() {
+    Log.i(TAG,"sensor details:");
 
-        File prepath = Environment.getExternalStorageDirectory();
+        for(Sensor currentSensor:listOfSensors) {
+            //supported only Api>=21
+           // Log.i(TAG,currentSensor.getName()+" reporting mode: "+currentSensor.getReportingMode());
+            Log.i(TAG,currentSensor.getName()+" FifoMaxEventCount: "+currentSensor.getFifoMaxEventCount());
+            Log.i(TAG,currentSensor.getName()+" FifoReservedEventCount: "+currentSensor.getFifoReservedEventCount());
+            Log.i(TAG,currentSensor.getName()+" max range: "+currentSensor.getMaximumRange());
+            Log.i(TAG,currentSensor.getName()+" min delay: "+currentSensor.getMinDelay());
 
+            //supported only Api>=21
+       //   Log.i(TAG,currentSensor.getName()+" max delay: "+currentSensor.getMaxDelay());
 
-        String filename = "/excercises.json";
-        String path = prepath + filename;
-        try {
-            Log.i(TAG,"result: "+json.toString());
-            PrintWriter out = new PrintWriter(new File(prepath, filename));
-            out.println(json.toString());
-            out.close();
-            Log.i(TAG, "saved to " + path);
-        } catch (Exception e) {
-            e.printStackTrace();
-            Log.i(TAG, "not saved " + e);
 
         }
     }
 
-    private void registerJsons() {
+
+    private void createJsons() {
         json = new JSONObject();
         jsonAccel = new JSONArray();
         jsonGyro = new JSONArray();
         jsonStep = new JSONArray();
-        sensorValues.put(ACCEL,jsonAccel);
-        sensorValues.put(GYRO,jsonGyro);
-        sensorValues.put(PEDO,jsonStep);
+
     }
 
+    /**
+     * sending a message to the phone
+     * @param path string to identify the wearable-phone pair
+     * @param text message to be send
+     */
     private void sendMessage( final String path, final String text ) {
 
 
@@ -186,7 +200,10 @@ public class MainActivityWear extends Activity implements GoogleApiClient.Connec
                 runOnUiThread( new Runnable() {
                     @Override
                     public void run() {
-                      //TODO
+                        CharSequence oldText = resultText.getText()+"\n";
+
+                        resultText.setText(oldText+"message send.");
+
                     }
                 });
             }
@@ -202,86 +219,79 @@ public class MainActivityWear extends Activity implements GoogleApiClient.Connec
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        Log.i(TAG,"sensor changed");
+        Log.i(TAG,"sensor "+event.sensor.getName() +" changed");
+
+        Long timeStamp = new Long ((new Date().getTime()- startingTime)/1000);
+        String timeStampStr = Long.toString(timeStamp);
         String sensorName = UNKNOWN;
         for (float i : event.values) {
-            Log.i(TAG, event.timestamp + event.sensor.getName() + ": " + i);
+            Log.i(TAG, timeStampStr +" :" +event.sensor.getName()+": " + i);
 
         }
-        JSONArray obj=null;
+
+        Log.i(TAG, timeStampStr+"--");
+        JSONObject valueObj = new JSONObject();
+        JSONObject mainObj = new JSONObject();
+        JSONArray ja = new JSONArray();
         if (event.sensor.getType() == listOfSensors.get(0).getType()) { //Accelerometer
-            obj=sensorValues.get(ACCEL);
 
-            Log.i(TAG, sensorName + " : " + event.sensor.getName());
             try {
-
-                JSONObject jo = new JSONObject();
-                Log.i(TAG, event.values.length+"");
-                for(int i=0; i<event.values.length;i++) {
-                    Log.i(TAG+"!!!", event.values[i]+"");
-                }
-                jo.put("x", event.values[0]);
-                jo.put("y", event.values[1]);
-                jo.put("z", event.values[2]);
-                JSONArray ja = new JSONArray();
-                ja.put(jo);
-                JSONObject mainObj = new JSONObject();
-                mainObj.put("values", ja);
-                mainObj.put("Time", event.timestamp);
+                AccelText.setText(ACCEL+": x: "+event.values[0]+" y: "+event.values[1]+" z: "+event.values[2]);
+                valueObj.put("x", event.values[0]);
+                valueObj.put("y", event.values[1]);
+                valueObj.put("z", event.values[2]);
+                ja.put(valueObj);
                 jsonAccel.put(mainObj);
 
             } catch (JSONException e) {
+                Log.i(TAG,"error creating accel json");
+
                 e.printStackTrace();
             }
         }
         else if (event.sensor.getType() == listOfSensors.get(1).getType()) { //Gyroscope
-            try {
 
-                JSONObject jo = new JSONObject();
-                Log.i(TAG, event.values.length+"");
-                for(int i=0; i<event.values.length;i++) {
-                    Log.i(TAG+"!!!", event.values[i]+"");
-                }
-                jo.put("x", event.values[0]);
-                jo.put("y", event.values[1]);
-                jo.put("z", event.values[2]);
-                JSONArray ja = new JSONArray();
-                ja.put(jo);
-                JSONObject mainObj = new JSONObject();
-                mainObj.put("values", ja);
-                mainObj.put("Time", event.timestamp);
+            try {
+                GyroText.setText(GYRO+": x: "+event.values[0]+" y: "+event.values[1]+" z: "+event.values[2]);
+
+                valueObj.put("x", event.values[0]);
+                valueObj.put("y", event.values[1]);
+                valueObj.put("z", event.values[2]);
+                ja.put(valueObj);
                 jsonGyro.put(mainObj);
 
             } catch (JSONException e) {
+                Log.i(TAG,"error creating gyro json");
+
                 e.printStackTrace();
             }
         } else if (event.sensor.getType() == listOfSensors.get(2).getType()) { //pedo
             try {
-
-                JSONObject jo = new JSONObject();
-                Log.i(TAG, event.values.length+"");
-                for(int i=0; i<event.values.length;i++) {
-                    Log.i(TAG, event.values[i]+"");
-                }
-                jo.put("x", event.values[0]);
-                JSONArray ja = new JSONArray();
-                ja.put(jo);
-                JSONObject mainObj = new JSONObject();
-                mainObj.put("values", ja);
-                mainObj.put("Time", event.timestamp);
-
+                StepText.setText(PEDO+": "+event.values[0]);
+                valueObj.put("x", event.values[0]);
+                ja.put(valueObj);
                 jsonStep.put(mainObj);
-
             } catch (JSONException e) {
+                Log.i(TAG,"error creating pedo json");
+
                 e.printStackTrace();
             }
         } else {
             Log.i(TAG,"unknown sensor");
         }
+        try {
+            mainObj.put("value", ja);
+            mainObj.put("time", timeStampStr);
+        } catch (JSONException e) {
+            e.printStackTrace();
+            Log.i(TAG,"error creating main json");
+        }
+
+     //   sendMessage(WEAR_MESSAGE_PATH, "");
     }
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int i) {
-
+    Log.i(TAG,"sensor accuracy changed for "+sensor.getName()+" to "+i);
     }
 }
