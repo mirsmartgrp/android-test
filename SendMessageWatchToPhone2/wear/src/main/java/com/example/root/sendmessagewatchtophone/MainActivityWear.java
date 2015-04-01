@@ -139,7 +139,8 @@ public class MainActivityWear extends Activity implements GoogleApiClient.Connec
 
 
                 long runtime = new Date().getTime() - startingTime;
-                resultText.setText("stopped. runtime: "+Long.toString(runtime/100));
+                Log.i(TAG,Long.toString(runtime));
+                resultText.setText("stopped. runtime: "+String.valueOf(runtime * 0.001));
                 Log.i(TAG, "runtime (ms) " + runtime);
                 displaySensorDetails();
 
@@ -221,8 +222,9 @@ public class MainActivityWear extends Activity implements GoogleApiClient.Connec
     public void onSensorChanged(SensorEvent event) {
         Log.i(TAG,"sensor "+event.sensor.getName() +" changed");
 
-        Long timeStamp = new Long ((new Date().getTime()- startingTime)/1000);
-        String timeStampStr = Long.toString(timeStamp);
+        Long timeStamp = new Long ((new Date().getTime()- startingTime));
+        double timeStampLong =  timeStamp*0.001;
+        String timeStampStr = String.valueOf(timeStamp*0.001);
         String sensorName = UNKNOWN;
         for (float i : event.values) {
             Log.i(TAG, timeStampStr +" :" +event.sensor.getName()+": " + i);
@@ -281,7 +283,7 @@ public class MainActivityWear extends Activity implements GoogleApiClient.Connec
         }
         try {
             mainObj.put("value", ja);
-            mainObj.put("time", timeStampStr);
+            mainObj.put("time", timeStampLong);
         } catch (JSONException e) {
             e.printStackTrace();
             Log.i(TAG,"error creating main json");

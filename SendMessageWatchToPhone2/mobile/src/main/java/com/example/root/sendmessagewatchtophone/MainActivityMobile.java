@@ -49,6 +49,8 @@ public class MainActivityMobile extends Activity implements MessageApi.MessageLi
     @Override
     protected void onResume() {
         super.onResume();
+        Log.i(TAG,"resumed");
+
         if( mApiClient != null && !( mApiClient.isConnected() || mApiClient.isConnecting() ) )
             mApiClient.connect();
     }
@@ -61,6 +63,8 @@ public class MainActivityMobile extends Activity implements MessageApi.MessageLi
         runOnUiThread( new Runnable() {
             @Override
             public void run() {
+                Log.i(TAG,"message received");
+
                 if( messageEvent.getPath().equalsIgnoreCase( WEAR_MESSAGE_PATH ) ) {
                     mAdapter.add(new String(messageEvent.getData()));
                     mAdapter.notifyDataSetChanged();
@@ -71,6 +75,7 @@ public class MainActivityMobile extends Activity implements MessageApi.MessageLi
     }
 
     private void saveData(MessageEvent messageEvent) {
+        Log.i(TAG,"saving data");
         File prepath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
         String str = new String(messageEvent.getData());
         String filename = "/"+new Date().getTime()+"_excercises.json";
