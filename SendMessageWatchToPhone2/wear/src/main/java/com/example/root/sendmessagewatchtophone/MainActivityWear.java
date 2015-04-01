@@ -234,15 +234,15 @@ public class MainActivityWear extends Activity implements GoogleApiClient.Connec
         Log.i(TAG, timeStampStr+"--");
         JSONObject valueObj = new JSONObject();
         JSONObject mainObj = new JSONObject();
-        JSONArray ja = new JSONArray();
-        if (event.sensor.getType() == listOfSensors.get(0).getType()) { //Accelerometer
+
+        if (event.sensor == sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)) { //Accelerometer
 
             try {
                 AccelText.setText(ACCEL+": x: "+event.values[0]+" y: "+event.values[1]+" z: "+event.values[2]);
                 valueObj.put("x", event.values[0]);
                 valueObj.put("y", event.values[1]);
                 valueObj.put("z", event.values[2]);
-                ja.put(valueObj);
+
                 jsonAccel.put(mainObj);
 
             } catch (JSONException e) {
@@ -251,7 +251,7 @@ public class MainActivityWear extends Activity implements GoogleApiClient.Connec
                 e.printStackTrace();
             }
         }
-        else if (event.sensor.getType() == listOfSensors.get(1).getType()) { //Gyroscope
+        else if (event.sensor == sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)) { //Gyroscope
 
             try {
                 GyroText.setText(GYRO+": x: "+event.values[0]+" y: "+event.values[1]+" z: "+event.values[2]);
@@ -259,7 +259,7 @@ public class MainActivityWear extends Activity implements GoogleApiClient.Connec
                 valueObj.put("x", event.values[0]);
                 valueObj.put("y", event.values[1]);
                 valueObj.put("z", event.values[2]);
-                ja.put(valueObj);
+
                 jsonGyro.put(mainObj);
 
             } catch (JSONException e) {
@@ -267,11 +267,11 @@ public class MainActivityWear extends Activity implements GoogleApiClient.Connec
 
                 e.printStackTrace();
             }
-        } else if (event.sensor.getType() == listOfSensors.get(2).getType()) { //pedo
+        } else if (event.sensor == sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)) { //pedo
             try {
                 StepText.setText(PEDO+": "+event.values[0]);
                 valueObj.put("x", event.values[0]);
-                ja.put(valueObj);
+
                 jsonStep.put(mainObj);
             } catch (JSONException e) {
                 Log.i(TAG,"error creating pedo json");
@@ -282,7 +282,7 @@ public class MainActivityWear extends Activity implements GoogleApiClient.Connec
             Log.i(TAG,"unknown sensor");
         }
         try {
-            mainObj.put("value", ja);
+            mainObj.put("value", valueObj);
             mainObj.put("time", timeStampLong);
         } catch (JSONException e) {
             e.printStackTrace();
